@@ -1,28 +1,44 @@
 package main
 
 import ("contentbot"
+	"fmt"
 	"github.com/PuerkitoBio/goquery"
+	"golang.org/x/text/encoding/charmap"
 	"regexp")
 
 var crawler = contentbot.Crawler{}.Inject("config.yml")
 
 func main() {
-	idnes()
+	parse()
 }
 
 func idnes() {
 	callback := func(node *goquery.Selection) []string {
-		return regexp.MustCompile("\\.|\\!|\\?").Split(node.Find("p").Text(), -1)
+		tag, _ := node.Attr("href")
+		return []string{"https://ekonomika.idnes.cz/" + tag}
 	}
-	crawler.FromFile("../data/input.csv").Select("#disc-list .user-text").Where(callback).ToFile(
-		"../data/output.csv").Fetch()
+	crawler.FromFile("../data/input.csv").Select("a#moot-linkin").Where(callback).ToFile(
+		"../data/output.csv").Fail("../data/fails.csv").Fetch()
 }
 
-func idnesLinks() {
+func parse() {
 	callback := func(node *goquery.Selection) []string {
-		tag, _ := node.Find("a").Attr("href")
-		return []string{tag}
+		row := ecodeWindows1250([]byte(node.Find("p").Text()))
+		fmt.Print(row)
+		return regexp.MustCompile("\\.|\\!|\\?").Split(row, -1)
 	}
-	crawler.FromFile("../data/input.csv").Select("table.moot-table tbody tr").Where(callback).ToFile(
-		"../data/output.csv").Fetch()
+	crawler.FromFile("../data/input.csv").Select("#disc-list .user-text").Where(callback).ToFile(
+		"../data/output.csv").Fail("../data/fails.csv").Fetch()
+}
+
+func decodeWindows1250(encoded []byte) string {
+	decoded := charmap.Windows1250.NewDecoder()
+	out, _ := decoded.Bytes(encoded)
+	return string(out)
+}
+
+func EncodeWindows1250(inp string) []byte {
+	enc := charmap.Windows1250.NewEncoder()
+	out, _ := enc.String(inp)
+	return out
 }

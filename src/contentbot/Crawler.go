@@ -1,6 +1,7 @@
 package contentbot
 
 import ("bufio"
+	"fmt"
 	"github.com/jinzhu/configor"
 	"github.com/PuerkitoBio/goquery"
 	"net/http"
@@ -14,13 +15,15 @@ type Crawler struct {
 		Output string
 	}
 	Container string
-	File *os.File
+	Fails string
 	From string
+	Tags *os.File
 	To string
+	Urls *os.File
 }
 
-func(crawler Crawler) Inject(config string) Crawler {
-	configor.Load(&crawler.Config, config)
+func(crawler Crawler) Fail(fail string) Crawler {
+	crawler.Fails = fail
 	return crawler
 }
 
@@ -36,8 +39,10 @@ func(crawler Crawler) Fetch() Crawler {
 		}
 		close(queue)
 	}()
-	crawler.File, _ = os.Create(crawler.To)
-	defer crawler.File.Close()
+	crawler.Tags, _ = os.Create(crawler.To)
+	defer crawler.Tags.Close()
+	crawler.Urls, _ = os.Create(crawler.Fails)
+	defer crawler.Urls.Close()
 	for i := 0; i < crawler.Config.Concurrency; i++ {
 		go crawler.load(queue, complete)
 	}
@@ -52,20 +57,31 @@ func(crawler Crawler) FromFile(file string) Crawler {
 	return crawler
 }
 
+func(crawler Crawler) Inject(config string) Crawler {
+	configor.Load(&crawler.Config, config)
+	return crawler
+}
+
 func(crawler Crawler) load(queue chan string, complete chan bool) {
-	for line := range queue {
-		response, _ := http.Get(line)
-		defer response.Body.Close()
-		doc, _ := goquery.NewDocumentFromReader(response.Body)
-		doc.Find(crawler.Container).Each(func(i int, node *goquery.Selection) {
-			lines := crawler.Callback(node)
-			for i := 0; i < len(lines); i++ {
-				line := strings.TrimSpace(lines[i])
-				if len(line) > 1 {
-					crawler.File.Write([]byte(line + "\n"))
+	for url := range queue {
+		response, err := http.Get(url)
+		if nil == err {
+			defer response.Body.Close()
+			doc, _ := goquery.NewDocumentFromReader(response.Body)
+			doc.Find(crawler.Container).Each(func(i int, node *goquery.Selection) {
+				lines := crawler.Callback(node)
+				for i := 0; i < len(lines); i++ {
+					line := strings.TrimSpace(lines[i])
+					if len(line) > 1 {
+						crawler.Tags.Write([]byte(line + "\n"))
+					}
 				}
-			}
-		})
+			})
+		} else {
+			fmt.Print("Failed on " + url + "\n")
+			crawler.Urls.Write([]byte(url + "\n"))
+		}
+
 	}
 	complete <- true
 }
