@@ -1,7 +1,6 @@
 package main
 
 import ("contentbot"
-	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"golang.org/x/text/encoding/charmap"
 	"regexp")
@@ -23,8 +22,7 @@ func idnes() {
 
 func parse() {
 	callback := func(node *goquery.Selection) []string {
-		row := ecodeWindows1250([]byte(node.Find("p").Text()))
-		fmt.Print(row)
+		row := decodeWindows1250([]byte(node.Find("p").Text()))
 		return regexp.MustCompile("\\.|\\!|\\?").Split(row, -1)
 	}
 	crawler.FromFile("../data/input.csv").Select("#disc-list .user-text").Where(callback).ToFile(
@@ -37,7 +35,7 @@ func decodeWindows1250(encoded []byte) string {
 	return string(out)
 }
 
-func EncodeWindows1250(inp string) []byte {
+func encodeWindows1250(inp string) string {
 	enc := charmap.Windows1250.NewEncoder()
 	out, _ := enc.String(inp)
 	return out
