@@ -41,10 +41,10 @@ final class ContentBot extends Control implements IContentBotFactory {
         $this->js = $js;
         $this->request = $request;
         $this->translatorRepository = $translatorRepository;
+        $this->monitor(IPresenter::class, [$this, 'attached']);
     }
 
     public function attached(IComponent $presenter): void {
-        parent::attached($presenter);
         if($presenter instanceof IPresenter) {
             $this->presenter = $presenter;
         }
