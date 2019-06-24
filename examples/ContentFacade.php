@@ -1,6 +1,6 @@
 <?php
 
-namespace ContentBot\Demo;
+namespace ContentBot\Examples;
 
 use ContentBot\IContent;
 

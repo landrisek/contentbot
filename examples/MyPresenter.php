@@ -1,13 +1,13 @@
 <?php
 
-namespace ContentBot\Demo;
+namespace ContentBot\Examples;
 
-use ContentBot\IContent,
-    ContentBot\IContentBotFactory,
-    Nette\Application\UI\Presenter;
+use ContentBot\IContent;
+use ContentBot\IContentBotFactory;
+use Nette\Application\UI\Presenter;
 
 /** @author Lubomir Andrisek */
-class DemoPresenter extends Presenter {
+final class MyPresenter extends Presenter {
 
     /** @var IContentBotFactory @inject */
     public $contentBotFactory;
@@ -24,7 +24,7 @@ class DemoPresenter extends Presenter {
     /** @var WriteRepository @inject */
     private $writeRepository;
 
-    public function actionDemo(int $id): void {
+    public function actionDefault(int $id): void {
         $this->id = $id;
         $this->write = $this->writeModel->getWrite($id);
     }
